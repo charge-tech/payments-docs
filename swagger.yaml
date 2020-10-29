@@ -1,0 +1,194 @@
+---
+swagger: "2.0"
+info:
+  description: "
+## Card Transactions
+
+Before starting up with actual API documentation, there are a few concepts that must be understood. On credit card processing, there are two main concepts which are fundamental parts of how funds go from the customer’s credit card to the merchant’s bank. Those are:
+  
+  
+**Authorization**: performing a debit or credit on a credit card to test fund availability without actually deducting the funds from the card. This means the amount is blocked and cannot be used.
+
+
+**Settlement**: the process of grouping all authorizations performed that day into a batch of transactions that is submitted to the processor to deduct the funds from the cardholders; typically processed nightly.
+
+
+In order to keep those two concepts completely manageable for the merchant, the PayCertify Gateway has implemented a Transaction Event concept which is an append-only log that keeps the whole transaction lifecycle intact. There are five different types of these events:
+
+
+* An **auth** which stands for an authorization debit, with no settlement;
+
+* A **capture** which stands for an actual debit, by promoting a transaction with an **auth** event to settlement;
+
+* **sale** requests are exactly the combination of **auth** and **capture**, meaning it authorizes and flags that event for settlement;
+
+* A **void** which is an authorization credit, that cancels partially or fully a previous **auth** event;
+
+* **refund** stands for an authorization credit, plus an actual credit since it sends that record for settlement. It should be run after a **capture** or **sale**.
+
+
+Special rules for [Canadian Transactions](https://docs.paycertify.com/api/gateway/cards/canadian-transactions/)
+
+
+**Examples**
+
+
+**Scenario #1** Let’s say you want to charge a customer card for $10.00 and deduct those funds immediately our of their account. Then, on the next day, after settlement, you want to refund $5.00 to that customer. To accomplish that, you’ll run a **sale** event for $10.00 (which would both authorize the amount and flag it for batch settlement later that day) and then, on the next day, you could run a **refund** event for $5.00, and on the day after those funds would be credited back to your customer.
+
+
+**Scenario #2** Let’s say you want to authorize a customer card for $500.00 for a hotel room. Eventually, whenever that customer does the checkout, you’ll just bill $400.00. In that case, you could run an **auth** request for $500.00. After that, you’ll run a **capture** for $400.00. Once the customer does the checkout, you can **void** the missing $100.00.
+
+## Test Card Numbers
+
+In order to help customers with the integration process with our API, the following list contains card numbers that can be used for testing purposes.
+
+<table>
+  <tr>
+    <td><b/>Credit Card Brand</td><td><b/>PAN</td><td><b/>EXP</td><td><b/>CVV</td>
+  </tr>
+  <tr><td><b/>Visa</td> <td>4111111111111111</td> <td>01/21</td> <td>999</td></tr>
+  <tr><td><b/>MasterCard</td> <td>5499740000000057</td> <td>02/22</td> <td>998</td></tr>
+  <tr><td><b/>AMEX</td> <td>371449635392376</td> <td>03/23</td> <td>9997</td></tr>
+  <tr><td><b/>Discover</td> <td>6011000993026909</td> <td>12/20</td> <td>966</td></tr>
+  <tr><td><b/>Diners</td> <td>3055155515160018</td> <td>12/20</td> <td>966</td></tr>
+  <tr><td><b/>JCB</td> <td>3530142019945859</td> <td>12/20</td> <td>966</td></tr>
+</table><br/>
+
+
+
+**Important - Relevant Information for Skrill**
+
+
+For tests purposes in Skrill you should use any valid date in the future (formatted as MM/YY) as **EXP**, a random number as **CVV** and any of the card numbers in the following list:
+
+
+<table>
+  <tr>
+    <td><b/>Credit Card Brand</td><td><b/>PAN</td>
+  </tr>
+  <tr><td><b/>MasterCard for Skrill</td> <td>5438311234567890</td>
+  <tr><td><b/>Visa for Skrill</td> <td>4000001234567890</td>
+  <tr><td><b/>Amex for Skrill</td> <td>371234500012340</td>
+</table><br/>
+
+
+
+**APPROVAL/DECLINES**
+
+* every single transaction with valid test cards should approve 
+
+* whenever amount is greater than 999999.99, decline
+
+* if CVV doesn’t match the above test cards, decline
+
+
+**AVS**
+
+* whenever enabled and **street_address_1 = 59 North Santa Cruz Av** and **state = CA** and **zip = 95030**, full avs match
+
+* whenever enabled and **street_address_1 = anything** and **state = CA** and **zip = 95030**, partial match
+
+* enabled and anything else no match"
+  title: "Payments"
+host: "gateway-api.paycertify.com"
+basePath: "/api"
+tags:
+- name: "Card Transactions"
+- name: "Tokenization"
+schemes:
+- "https"
+paths:
+  /tokens/tokenize:
+    post:
+      tags:
+      - "Tokenization"
+      summary: "Card Tokenize"
+      description: ""
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/TokenizeRequest"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/TokenizeResponse"
+      security:
+      - petstore_auth:
+        - "write:pets"
+        - "read:pets"
+  /transactions/sale:
+    post:
+      tags:
+      - "Card Transactions"
+      summary: "Charge a Credit Card"
+      description: ""
+      operationId: "addPet"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Pet object that needs to be added to the store"
+        required: true
+        schema:
+          $ref: "#/definitions/Pet"
+      responses:
+        405:
+          description: "Invalid input"
+      security:
+      - petstore_auth:
+        - "write:pets"
+        - "read:pets"
+securityDefinitions:
+  api_key:
+    type: "apiKey"
+    name: "api_key"
+    in: "header"
+  petstore_auth:
+    type: "oauth2"
+    authorizationUrl: "https://petstore.swagger.io/oauth/authorize"
+    flow: "implicit"
+    scopes:
+      read:pets: "read your pets"
+      write:pets: "modify pets in your account"
+definitions:
+  TokenizeResponse:
+    type: "object"
+    properties:
+      card_token:
+        type: "object"
+        properties:
+          id:
+            type: "string"
+            format: "uuid"
+            description: "This token’s ID"
+          merchant_id:
+            type: "string"
+            format: "uuid"
+            description: "The token’s merchant ID"
+          card_token:
+            type: "string"
+            description: "The tokenized credit card"
+  TokenizeRequest:
+    type: "object"
+    properties:
+      card_number:
+        type: "string"
+        description: "This token’s ID"
+      card_expiry_month:
+        type: "string"
+        description: "The expiration month with two positions"
+        example: "12"
+      card_expiry_year:
+        type: "string"
+        description: "The expiration year with four positions"
+        example: "2025"
