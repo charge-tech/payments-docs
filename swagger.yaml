@@ -119,10 +119,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/TokenizeResponse"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
   /transactions/sale:
     post:
       tags:
@@ -134,20 +130,6 @@ paths:
       - "application/json"
       produces:
       - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Pet object that needs to be added to the store"
-        required: true
-        schema:
-          $ref: "#/definitions/Pet"
-      responses:
-        405:
-          description: "Invalid input"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
 securityDefinitions:
   api_key:
     type: "apiKey"
