@@ -368,7 +368,7 @@ definitions:
                   example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28" 
                 success: 
                   type: "boolean"
-                  description: "	If the event was a successful event or not"
+                  description: "If the event was a successful event or not"
                   example: "true"
                 event_type: 
                   type: "string"
