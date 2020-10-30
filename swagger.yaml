@@ -100,6 +100,8 @@ schemes:
 paths:
   /tokens/tokenize:
     post:
+      security:
+      - ApiKeyAuth: []
       tags:
       - "Tokenization"
       summary: "Card Tokenize"
@@ -121,6 +123,8 @@ paths:
             $ref: "#/definitions/TokenizeResponse"
   /transactions/sale:
     post:
+      security:
+      - ApiKeyAuth: []
       tags:
       - "Card Transactions"
       summary: "Charge a Credit Card"
@@ -130,36 +134,29 @@ paths:
       - "application/json"
       produces:
       - "application/json"
-securityDefinitions:
-  api_key:
-    type: "apiKey"
-    name: "api_key"
-    in: "header"
-  petstore_auth:
-    type: "oauth2"
-    authorizationUrl: "https://petstore.swagger.io/oauth/authorize"
-    flow: "implicit"
-    scopes:
-      read:pets: "read your pets"
-      write:pets: "modify pets in your account"
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/ChargeCreaditCardRequest"
+      responses: 
+        200:
+          description: "successful operation"
+          schema: 
+            $ref: "#/definitions/ChargeCreaditCardResponse"
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT 
+securityDefinitions: 
+  ApiKeyAuth:
+    type: apiKey
+    in: header
+    name: Authorization
 definitions:
-  TokenizeResponse:
-    type: "object"
-    properties:
-      card_token:
-        type: "object"
-        properties:
-          id:
-            type: "string"
-            format: "uuid"
-            description: "This token’s ID"
-          merchant_id:
-            type: "string"
-            format: "uuid"
-            description: "The token’s merchant ID"
-          card_token:
-            type: "string"
-            description: "The tokenized credit card"
   TokenizeRequest:
     type: "object"
     properties:
@@ -174,3 +171,244 @@ definitions:
         type: "string"
         description: "The expiration year with four positions"
         example: "2025"
+  TokenizeResponse:
+    type: "object"
+    properties:
+      card_token:
+        type: "object"
+        properties:
+          id:
+            type: "string"
+            format: "uuid"
+            description: "This token’s ID"
+            example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28" 
+          merchant_id:
+            type: "string"
+            format: "uuid"
+            description: "The token’s merchant ID"
+            example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28" 
+          card_token:
+            type: "string"
+            description: "The tokenized credit card"
+            example: "4111098765431111" 
+  ChargeCreaditCardRequest:
+    type: "object"
+    properties:
+      processor_id:
+        type: "string"
+        format: "uuid"
+        required: false
+        description: "The Processor record ID. If processor_id has not been provided, the gateway will pick one randomly."
+        example: 41f00869-d7b3-413e-9476-9ef1a8bc2f28
+      amount:
+        type: "number"
+        format: "float"
+        required: true
+        description: "Total transaction amount"
+        example: "3.56"
+      card_number:
+        type: "string"
+        required: true
+        description: "The credit card to charge"
+        example: "411111111111111"
+      card_expiry_month:
+        type: "string"
+        required: true
+        description: "The expiration month with two positions"
+        example: "01"
+      card_expiry_year:
+        type: "string"
+        required: true
+        description: "The expiration month with four positions"
+        example: "2021"
+      card_cvv:
+        type: "string"
+        required: false
+        description: "3 or 4 digit [card verification code](https://en.wikipedia.org/wiki/Card_security_code). card_cvv is a not required as a default. There are some processors such as “Payvision” that requires this field to be present on VISA,MASTER,AMEX."
+        example: "123"
+      merchant_transaction_id:
+        type: "string"
+        required: true
+        description: "A merchant assigned identifier (your transaction ID)"
+        example: "my-order-id-0001"
+      first_name:
+        type: "string"
+        required: false
+        description: "Customer’s first name. first_name is required and minimum of 2 chars when running transactions with Skrill Card processor."
+        example: "John"
+      last_name:
+        type: "string"
+        required: false
+        description: "Customer’s last name. last_name is required and minimum of 2 chars when running transactions with Skrill Card processor."
+        example: "Doe"
+      email:
+        type: "string"
+        required: false
+        description: "Customer’s email"
+        example: "support@paycertify.com"
+      mobile_phone:
+        type: "string"
+        required: false
+        description: "Customer’s phone"
+        example: "11231231234"
+      street_address_1:
+        type: "string"
+        required: false
+        description: "Billing address first line (street address)"
+        example: "59 N Santa Cruz Avenue"
+      street_address_2:
+        type: "string"
+        required: false
+        description: "Billing address second line (suite, apt, etc)"
+        example: "Suite M"
+      city:
+        type: "string"
+        required: false
+        description: "Billing address city"
+        example: "Los Gatos"
+      state:
+        type: "string"
+        required: false
+        description: "Billing address state abbreviation"
+        example: "CA"
+      country:
+        type: "string"
+        required: false
+        description: "Billing address country abbreviation"
+        example: "US"
+      zip:
+        type: "string"
+        required: false
+        description: "Billing address postal code"
+        example: "95030"
+      shipping_street_address_1:
+        type: "string"
+        required: false
+        description: "Shipping address first line (street address)"
+        example: "59 N Santa Cruz Avenue"
+      shipping_street_address_2:
+        type: "string"
+        required: false
+        description: "Shipping address second line (suite, apt, etc)"
+        example: "Suite M"
+      shipping_city:
+        type: "string"
+        required: false
+        description: "Shipping address city"
+        example: "Los Gatos"
+      shipping_state:
+        type: "string"
+        required: false
+        description: "Shipping address state abbreviation"
+        example: "CA"
+      shipping_country:
+        type: "string"
+        required: false
+        description: "Shipping address country abbreviation"
+        example: "US"
+      shipping_zip:
+        type: "string"
+        required: false
+        description: "Shipping address postal code"
+        example: "95030"
+      ip_address:
+        type: "string"
+        required: true
+        description: "Customer’s IP address"
+        example: "192.168.108.105"
+      document_number:
+        type: "string"
+        required: true
+        description: "The ID of the Identification document for the customer. Only required to PayVisionCard processor. The documents accepted are [CPF : Tax payer identification number for individuals](https://en.wikipedia.org/wiki/Cadastro_de_Pessoas_F%C3%ADsicas) and [CNPJ : Tax payer identification number for businesses](https://en.wikipedia.org/wiki/CNPJ)"
+        example: "00003456790"
+      meta:
+        type: "json"
+        required: false
+        description: "A fields’ list related to merchant’s business"
+        example: "“meta”: {}"
+  ChargeCreaditCardResponse:
+    type: "object"
+    properties:
+      transaction:
+        type: "object"
+        properties:
+          id:
+            type: "string"
+            format: "uuid"
+            description: "This transaction’s ID"
+            example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+          merchant_id:
+            type: "string"
+            format: "uuid"
+            description: "The user’s merchant ID"
+            example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+          user_id:
+            type: "string"
+            format: "uuid"
+            description: "The user’s ID"
+            example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+          processor_id:
+            type: "string"
+            format: "uuid"
+            description: "The processor’s ID"
+            example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+          merchant_transaction_id:
+            type: "string"
+            description: "The merchant assigned identifier"
+            example: "my-order-id-0001"
+          events:
+            type: "array"
+            items:
+              type: "object"
+              properties:
+                id: 
+                  type: "string"
+                  format: "uuid"
+                  description: "This event’s ID"
+                  example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28" 
+                success: 
+                  type: "boolean"
+                  description: "	If the event was a successful event or not"
+                  example: "true"
+                event_type: 
+                  type: "string"
+                  description: "The type of event being performed"
+                  example: "auth, capture, sale, void, refund"
+                amount: 
+                  type: "number"
+                  format: "float"
+                  description: "Total event amount"
+                  example: "3.56"
+                processor_code: 
+                  type: "string"
+                  description: "The processor response code"
+                  example: "00"
+                processor_message: 
+                  type: "string"
+                  description: "A human readable message from the processor"
+                  example: "APPROVAL V12341"
+                processor_transaction_id: 
+                  type: "string"
+                  description: "A processor assigned identifier"
+                  example: "00000000143242"
+                updated_at: 
+                  type: "string"
+                  format: "date-time"
+                  description: "Last time this event was updated, on [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) UTC"
+                  example: "2018-02-16T16:33:40+00:00"
+                created_at: 
+                  type: "string"
+                  format: "date-time"
+                  description: "Time that event was created, on [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) UTC"
+                  example: "2018-02-16T16:33:40+00:00"
+          updated_at: 
+            type: "string"
+            format: "date-time"
+            description: "Last time this transaction was updated, on [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) UTC"
+            example: "2018-02-16T16:33:40+00:00"
+          created_at: 
+            type: "string"
+            format: "date-time"
+            description: "Last  time this transaction was created, on [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) UTC"
+            example: "2018-02-16T16:33:40+00:00"
+                 
