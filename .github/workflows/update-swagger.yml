@@ -1,5 +1,8 @@
 name: Update Swagger UI
 on:
+  push:
+    branches:
+      - main
   schedule:
     - cron:  '0 10 * * *'
   repository_dispatch:
@@ -47,4 +50,4 @@ jobs:
             [1]: https://github.com/swagger-api/swagger-ui
             [2]: https://github.com/peter-evans/create-pull-request
           labels: dependencies, automated pr
-          branch: github-pages
+          branch: swagger-ui-updates
