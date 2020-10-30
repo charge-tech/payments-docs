@@ -27,8 +27,6 @@ In order to keep those two concepts completely manageable for the merchant, the 
 * **refund** stands for an authorization credit, plus an actual credit since it sends that record for settlement. It should be run after a **capture** or **sale**.
 
 
-Special rules for [Canadian Transactions](https://docs.paycertify.com/api/gateway/cards/canadian-transactions/)
-
 
 **Examples**
 
@@ -145,12 +143,6 @@ paths:
           description: "successful operation"
           schema: 
             $ref: "#/definitions/ChargeCreaditCardResponse"
-components:
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT 
 securityDefinitions: 
   ApiKeyAuth:
     type: apiKey
