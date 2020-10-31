@@ -88,6 +88,7 @@ For tests purposes in Skrill you should use any valid date in the future (format
 
 * enabled and anything else no match"
   title: "Payments"
+  version: "1.0.0"
 host: "gateway-api.paycertify.com"
 basePath: "/api"
 tags:
