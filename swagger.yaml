@@ -2,6 +2,8 @@
 swagger: "2.0"
 info:
   description: "
+![Alt text](/images/charge_payments.png?raw=true 'Charge_logo')
+
 ## Card Transactions
 
 Before starting up with actual API documentation, there are a few concepts that must be understood. On credit card processing, there are two main concepts which are fundamental parts of how funds go from the customer’s credit card to the merchant’s bank. Those are:
@@ -13,7 +15,7 @@ Before starting up with actual API documentation, there are a few concepts that 
 **Settlement**: the process of grouping all authorizations performed that day into a batch of transactions that is submitted to the processor to deduct the funds from the cardholders; typically processed nightly.
 
 
-In order to keep those two concepts completely manageable for the merchant, the PayCertify Gateway has implemented a Transaction Event concept which is an append-only log that keeps the whole transaction lifecycle intact. There are five different types of these events:
+In order to keep those two concepts completely manageable for the merchant, the Charge Gateway has implemented a Transaction Event concept which is an append-only log that keeps the whole transaction lifecycle intact. There are five different types of these events:
 
 
 * An **auth** which stands for an authorization debit, with no settlement;
@@ -87,8 +89,8 @@ For tests purposes in Skrill you should use any valid date in the future (format
 * whenever enabled and **street_address_1 = anything** and **state = CA** and **zip = 95030**, partial match
 
 * enabled and anything else no match"
-  title: "Payments"
-host: "gateway-api.paycertify.com"
+  title: "Charge Payments"
+host: "payments.charge.io"
 basePath: "/api"
 tags:
 - name: "Card Transactions"
@@ -137,12 +139,12 @@ paths:
         name: "body"
         required: true
         schema:
-          $ref: "#/definitions/ChargeCreaditCardRequest"
+          $ref: "#/definitions/ChargeCreditCardRequest"
       responses: 
         200:
           description: "successful operation"
           schema: 
-            $ref: "#/definitions/ChargeCreaditCardResponse"
+            $ref: "#/definitions/ChargeCreditCardResponse"
 securityDefinitions: 
   ApiKeyAuth:
     type: apiKey
@@ -183,7 +185,7 @@ definitions:
             type: "string"
             description: "The tokenized credit card"
             example: "4111098765431111" 
-  ChargeCreaditCardRequest:
+  ChargeCreditCardRequest:
     type: "object"
     properties:
       processor_id:
@@ -237,7 +239,7 @@ definitions:
         type: "string"
         required: false
         description: "Customer’s email"
-        example: "support@paycertify.com"
+        example: "support@charge.io"
       mobile_phone:
         type: "string"
         required: false
@@ -247,7 +249,7 @@ definitions:
         type: "string"
         required: false
         description: "Billing address first line (street address)"
-        example: "59 N Santa Cruz Avenue"
+        example: "1104 Highland Ave."
       street_address_2:
         type: "string"
         required: false
@@ -257,7 +259,7 @@ definitions:
         type: "string"
         required: false
         description: "Billing address city"
-        example: "Los Gatos"
+        example: "Manhattan Beach"
       state:
         type: "string"
         required: false
@@ -272,12 +274,12 @@ definitions:
         type: "string"
         required: false
         description: "Billing address postal code"
-        example: "95030"
+        example: "90266"
       shipping_street_address_1:
         type: "string"
         required: false
         description: "Shipping address first line (street address)"
-        example: "59 N Santa Cruz Avenue"
+        example: "1104 Highland Ave."
       shipping_street_address_2:
         type: "string"
         required: false
@@ -287,7 +289,7 @@ definitions:
         type: "string"
         required: false
         description: "Shipping address city"
-        example: "Los Gatos"
+        example: "Manhattan Ave."
       shipping_state:
         type: "string"
         required: false
@@ -302,7 +304,7 @@ definitions:
         type: "string"
         required: false
         description: "Shipping address postal code"
-        example: "95030"
+        example: "90266"
       ip_address:
         type: "string"
         required: true
@@ -318,7 +320,7 @@ definitions:
         required: false
         description: "A fields’ list related to merchant’s business"
         example: "“meta”: {}"
-  ChargeCreaditCardResponse:
+  ChargeCreditCardResponse:
     type: "object"
     properties:
       transaction:
