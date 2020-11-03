@@ -90,7 +90,7 @@ For tests purposes in Skrill you should use any valid date in the future (format
 
 * enabled and anything else no match"
   title: "Charge Payments"
-host: "payments.charge.io"
+host: "gateway-api.charge.io"
 basePath: "/api"
 tags:
 - name: "Card Transactions"
