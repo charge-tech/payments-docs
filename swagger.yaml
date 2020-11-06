@@ -276,8 +276,8 @@ info:
     
     Filter types are described below:
 
-      * **starts with** which matches for records on a SQL **LIKE** fashion, e.g.: a string “PayC” will match “Charge”;
-      * **exact comparison** which matches for records through exact comparison, case sensitive, e.g.: a string “Charge” will NOT match “Charge”;
+      * **starts with** which matches for records on a SQL **LIKE** fashion, e.g.: a string “Cha“ will match “Charge”;
+      * **exact comparison** which matches for records through exact comparison, case sensitive, e.g.: a string “charge” will NOT match “Charge”;
       * **date** which matches for records through SQL date, and these fields should be provided on Y-m-d H:i:s format, e.g.: 2025-01-01 17:59:00
 
     Also, this endpoint provides pagination to navigate through record sets. Pagination information can be found on meta response field. The pages always return 50 records at a time. While using reporting capabilities, make sure to monitor rate limits through **X-RateLimit-Limit** and **X-RateLimit-Remaining** response headers.
