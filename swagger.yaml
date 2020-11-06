@@ -1,103 +1,824 @@
 ---
 swagger: "2.0"
 info:
-  description: "
-![Alt text](/images/charge_payments.png?raw=true 'Charge_logo')
-
-## Card Transactions
-
-Before starting up with actual API documentation, there are a few concepts that must be understood. On credit card processing, there are two main concepts which are fundamental parts of how funds go from the customer’s credit card to the merchant’s bank. Those are:
-  
-  
-**Authorization**: performing a debit or credit on a credit card to test fund availability without actually deducting the funds from the card. This means the amount is blocked and cannot be used.
+  description: |
+    ![Charge logo](dist/charge_payments.png)
 
 
-**Settlement**: the process of grouping all authorizations performed that day into a batch of transactions that is submitted to the processor to deduct the funds from the cardholders; typically processed nightly.
+    ---
 
 
-In order to keep those two concepts completely manageable for the merchant, the Charge Gateway has implemented a Transaction Event concept which is an append-only log that keeps the whole transaction lifecycle intact. There are five different types of these events:
+    ## Authorization
+
+    To use the gateway APIs you will need an **API Token**, which can be requested to support or navigating on your gateway account to Users > Details > Api Token.
+
+    With that token, you’ll be able to access our API. You should send your key in every request to our API, in order to authenticate and identify yourself. For every request, you should pass the Authorization HTTP Header containing your token, prefixed by “Bearer “ string. Example below:
+
+    `curl -H 'Authorization: Bearer YOUR_API_TOKEN' https://gateway-api.charge.io/api/transactions`
+
+    An authentication error message would return a message like the following:
+      
+    ```
+    {
+      "error": {
+        "status": 401,
+        "message": {
+          "base": [
+            "Not authenticated"
+          ]
+        }
+      }
+    }
+    ```
+
+    Please note that the error messages that use the same structure of an **error** node will display a **message** node. The message displayed will result when the incorrect syntax is used in the desired field. A **base** error is a general error that cannot be related to any field submitted The **fatal** node is a system error that will occur when the incorrect format is entered into a field, such as when letters are used in the **amount** field. This will result in a system error. All messages also contain an HTTP status follow W3C recommendations, e.g. an unauthenticated request will issue an HTTP status 401.
+
+    We include the HTTP status on the JSON message, as well as on the headers of all JSON error responses.
+
+    You must replace **YOUR_API_TOKEN** with your personal API key.
+
+    #### Rate limiting
+
+    Please note that API requests are rate-limited for security purposes. By default, you are not allowed to submit more than 60 requests per minute. **X-RateLimit-Limit** and **X-RateLimit-Remaining** headers are always present on the API responses so you can better manage your requests and put together a timing strategy. If that limit is exceeded, the server will return HTTP Status 429 and data will not be submitted to the processor. Our recommendation is using an exponential backoff strategy to make sure you do not over exceed the limits as this may result in permanent blacklisting.
+
+    ```
+    {
+      "error": {
+        "status": 429,
+        "message": {
+          "base": [
+            "Too Many Attempts."
+          ]
+        }
+      }
+    }
+    ```
+
+    If you need a limit higher than 60req/min, please contact us with reasoning for the upgrade.
 
 
-* An **auth** which stands for an authorization debit, with no settlement;
+    ---
 
-* A **capture** which stands for an actual debit, by promoting a transaction with an **auth** event to settlement;
+      
+    ## Test Card Numbers
 
-* **sale** requests are exactly the combination of **auth** and **capture**, meaning it authorizes and flags that event for settlement;
+    In order to help customers with the integration process with our API, the following list contains card numbers that can be used for testing purposes.
 
-* A **void** which is an authorization credit, that cancels partially or fully a previous **auth** event;
-
-* **refund** stands for an authorization credit, plus an actual credit since it sends that record for settlement. It should be run after a **capture** or **sale**.
-
-
-
-**Examples**
-
-
-**Scenario #1** Let’s say you want to charge a customer card for $10.00 and deduct those funds immediately our of their account. Then, on the next day, after settlement, you want to refund $5.00 to that customer. To accomplish that, you’ll run a **sale** event for $10.00 (which would both authorize the amount and flag it for batch settlement later that day) and then, on the next day, you could run a **refund** event for $5.00, and on the day after those funds would be credited back to your customer.
-
-
-**Scenario #2** Let’s say you want to authorize a customer card for $500.00 for a hotel room. Eventually, whenever that customer does the checkout, you’ll just bill $400.00. In that case, you could run an **auth** request for $500.00. After that, you’ll run a **capture** for $400.00. Once the customer does the checkout, you can **void** the missing $100.00.
-
-## Test Card Numbers
-
-In order to help customers with the integration process with our API, the following list contains card numbers that can be used for testing purposes.
-
-<table>
-  <tr>
-    <td><b/>Credit Card Brand</td><td><b/>PAN</td><td><b/>EXP</td><td><b/>CVV</td>
-  </tr>
-  <tr><td><b/>Visa</td> <td>4111111111111111</td> <td>01/21</td> <td>999</td></tr>
-  <tr><td><b/>MasterCard</td> <td>5499740000000057</td> <td>02/22</td> <td>998</td></tr>
-  <tr><td><b/>AMEX</td> <td>371449635392376</td> <td>03/23</td> <td>9997</td></tr>
-  <tr><td><b/>Discover</td> <td>6011000993026909</td> <td>12/20</td> <td>966</td></tr>
-  <tr><td><b/>Diners</td> <td>3055155515160018</td> <td>12/20</td> <td>966</td></tr>
-  <tr><td><b/>JCB</td> <td>3530142019945859</td> <td>12/20</td> <td>966</td></tr>
-</table><br/>
+    <table>
+      <tr>
+        <td><b/>Credit Card Brand</td><td><b/>PAN</td><td><b/>EXP</td><td><b/>CVV</td>
+      </tr>
+      <tr><td><b/>Visa</td> <td>4111111111111111</td> <td>01/21</td> <td>999</td></tr>
+      <tr><td><b/>MasterCard</td> <td>5499740000000057</td> <td>02/22</td> <td>998</td></tr>
+      <tr><td><b/>AMEX</td> <td>371449635392376</td> <td>03/23</td> <td>9997</td></tr>
+      <tr><td><b/>Discover</td> <td>6011000993026909</td> <td>12/20</td> <td>966</td></tr>
+      <tr><td><b/>Diners</td> <td>3055155515160018</td> <td>12/20</td> <td>966</td></tr>
+      <tr><td><b/>JCB</td> <td>3530142019945859</td> <td>12/20</td> <td>966</td></tr>
+    </table><br/>
 
 
+    **Important - Relevant Information for Skrill**
 
-**Important - Relevant Information for Skrill**
+    For tests purposes in Skrill you should use any valid date in the future (formatted as MM/YY) as **EXP**, a random number as **CVV** and any of the card numbers in the following list:
 
-
-For tests purposes in Skrill you should use any valid date in the future (formatted as MM/YY) as **EXP**, a random number as **CVV** and any of the card numbers in the following list:
-
-
-<table>
-  <tr>
-    <td><b/>Credit Card Brand</td><td><b/>PAN</td>
-  </tr>
-  <tr><td><b/>MasterCard for Skrill</td> <td>5438311234567890</td>
-  <tr><td><b/>Visa for Skrill</td> <td>4000001234567890</td>
-  <tr><td><b/>Amex for Skrill</td> <td>371234500012340</td>
-</table><br/>
+    <table>
+      <tr>
+        <td><b/>Credit Card Brand</td><td><b/>PAN</td>
+      </tr>
+      <tr><td><b/>MasterCard for Skrill</td> <td>5438311234567890</td>
+      <tr><td><b/>Visa for Skrill</td> <td>4000001234567890</td>
+      <tr><td><b/>Amex for Skrill</td> <td>371234500012340</td>
+    </table><br/>
 
 
+    **APPROVAL/DECLINES**
+    * every single transaction with valid test cards should approve 
+    * whenever amount is greater than 999999.99, decline
+    * if CVV doesn’t match the above test cards, decline
 
-**APPROVAL/DECLINES**
-
-* every single transaction with valid test cards should approve 
-
-* whenever amount is greater than 999999.99, decline
-
-* if CVV doesn’t match the above test cards, decline
+    **AVS**
+    * whenever enabled and **street_address_1 = 59 North Santa Cruz Av** and **state = CA** and **zip = 95030**, full avs match
+    * whenever enabled and **street_address_1 = anything** and **state = CA** and **zip = 95030**, partial match
+    * enabled and anything else no match
 
 
-**AVS**
+    ---
 
-* whenever enabled and **street_address_1 = 59 North Santa Cruz Av** and **state = CA** and **zip = 95030**, full avs match
 
-* whenever enabled and **street_address_1 = anything** and **state = CA** and **zip = 95030**, partial match
+    ## Card Transactions
 
-* enabled and anything else no match"
+    Before starting up with actual API documentation, there are a few concepts that must be understood. On credit card processing, there are two main concepts which are fundamental parts of how funds go from the customer’s credit card to the merchant’s bank. Those are:
+      
+    **Authorization**: performing a debit or credit on a credit card to test fund availability without actually deducting the funds from the card. This means the amount is blocked and cannot be used.
+
+    **Settlement**: the process of grouping all authorizations performed that day into a batch of transactions that is submitted to the processor to deduct the funds from the cardholders; typically processed nightly.
+
+    In order to keep those two concepts completely manageable for the merchant, the Charge Gateway has implemented a Transaction Event concept which is an append-only log that keeps the whole transaction lifecycle intact. There are five different types of these events:
+
+    * An **auth** which stands for an authorization debit, with no settlement;
+    * A **capture** which stands for an actual debit, by promoting a transaction with an **auth** event to settlement;
+    * **sale** requests are exactly the combination of **auth** and **capture**, meaning it authorizes and flags that event for settlement;
+    * A **void** which is an authorization credit, that cancels partially or fully a previous **auth** event;
+    * **refund** stands for an authorization credit, plus an actual credit since it sends that record for settlement. It should be run after a **capture** or **sale**.
+
+    **Examples**
+
+    **Scenario #1** Let’s say you want to charge a customer card for $10.00 and deduct those funds immediately our of their account. Then, on the next day, after settlement, you want to refund $5.00 to that customer. To accomplish that, you’ll run a **sale** event for $10.00 (which would both authorize the amount and flag it for batch settlement later that day) and then, on the next day, you could run a **refund** event for $5.00, and on the day after those funds would be credited back to your customer.
+
+    **Scenario #2** Let’s say you want to authorize a customer card for $500.00 for a hotel room. Eventually, whenever that customer does the checkout, you’ll just bill $400.00. In that case, you could run an **auth** request for $500.00. After that, you’ll run a **capture** for $400.00. Once the customer does the checkout, you can **void** the missing $100.00.
+
+    #### Charge a Credit Card
+
+    Charging a credit card using Charge gateway is simple. In this case, we’re performing a straight capture, so it’s an authorization and also a settlement request. If you’re looking just to authorize a certain amount, and then charge later, see **Authorize and Charge later**
+
+    #### Authorize and Charge Later
+
+    **Default Behavior**
+
+    In order to charge later, you need to make two requests: first an **auth** request, which blocks balance on customer’s credit card, and then run **capture** request, to flag the authorization for settlement.
+
+    #### Capture Transaction
+
+    After running the auth transaction event, you should be able to capture the funds. Use the transaction ID sent back in the response to capture the desired amount.
+    
+    #### Voiding a Transaction
+
+    A void is only possible after a transaction has been created through auth request. Once that’s done, you should use the transaction ID response field to reference the transaction being voided. A void simply cancels a previously made authorization and releases the authorized balance on the customer’s card.
+
+    #### Refunding a Transaction
+
+    A refund should be ran when running a reversal for a transaction that has a **capture** or **sale** event. A **refund** flags the transaction to be sent for settlement and returns the funds to the customer.
+    
+    #### Passing 3D Secure Data
+
+    3D Secure is a method to shift fraud liability from the merchant’s sphere to the issuing bank or card brand sphere. That means whenever a 3D Secure protected transaction is provided to the processor and authorized, that transaction cannot become a dispute or a chargeback, as the card brand and the issuing bank previously approved it from happening. All this happens in real-time, in a variety of methods.
+
+    EMV 3DS is the upgraded version of the protocol, also known as 3DS2, 3DS V2 or 3DS 2.0.
+
+    When running 3D Secure authenticated transactions you should pass the MPI/ACS response to the gateway. Possible outcomes for a 3D Secure transaction are:
+
+      * attempted which is returned whenever a 3DS request has been attempted but not fully validated by the card brand or issuer;
+      * failed is returned whenever the card brand or issuer denied the transaction from happening;
+      * success is returned whenever the transaction has been successfully protected and liability has been shifted;
+      * error means the processor, issuer or card brand systems returned an error with the provided data;
+      * unavailable means that 3DS is not available for the provided card.
+    
+    This should be done either during a **auth** or **sale** event. Besides passing all fields for these event types, you will also need to pass the fields described below. All this data is provided by your 3DS MPI, after running the Payment Authentication Response (PaRes).
+
+    #### Address Verification
+
+    Address Verification Service is one way to confirm customer identity and remove fraud, while decreasing interchange rates. By providing the customer’s full address, you add another layer of security and consequently fetch more data from the processors, while protecting you from fraud. Our address verification service returns five different statuses to identify the outcome of an AVS request attempt: **exact_match**, **partial_match**, **no_match**, **error** and **unavailable**.
+
+    * exact_match is returned whenever the address matches the records. That usually means the address, city, state, country and postal code match;
+    * partial_match is returned whenever the processor is able to match parts of the information provided;
+    * no_match is returned whenever there aren’t records matching the data provided;
+    * error means the processor or issuer systems returned an error with the provided data;
+    * unavailable means that AVS is not available for the provided card.
+
+    AVS should be done either during a **auth** or **sale** event. Besides passing all fields for these event types, you will also need to pass the fields described below.
+   
+    #### Airline & Travel Data
+
+    Charge Gateway™ has some built-in features for the Airline and Travel industries. Whenever submitting a transaction for those industries, you can pass additional information which will both populate on our Gateway’s user interface and also on the customer’s credit card statement, besides sending additional data to the processors which help on reconciliation, dispute, risk, fraud mitigation and chargeback representment processes. This data includes:
+    
+    * Passenger name and ticket details such as ticket number, issuing city, carrier and date;
+    * Restricted ticket indicators (for tickets that cannot be refunded);
+    * Leg information such as carrier code, service class, departure and destination airports and fares;
+
+    For each passenger you want to use the reporting capabilities, you should be submitting an object under the **passenger_transport** field. As for each leg, you should be submitting information under the passenger record, even if all passengers are doing the same itinerary.
+    
+    Make sure that the **processor_id** being used for this feature has industry field as **passenger_transport**.
+
+    #### Dynamic Descriptors
+
+    A dynamic descriptor is a string passed to the processor to be displayed on the customer’s card statement while overriding default information such as the merchant’s name, merchant phone, website or city. Our dynamic descriptor implementation uses a pipe element | to separate the name from the contact info (which may be the city, phone or website). So for example, a dynamic descriptor passed as MYBUSINESSINC|123-1231234 will be interpreted at processor level as **name=MYBUSINESSINC** and contact **info=123-1231234**.
+
+    **Each processor has it's own constraints for showing up data, and sometimes this also varies by card issuer.**
+
+    #### Using Tokenization
+
+    In order to use a Tokenized credit card for authorization and sale, you can use the Tokenization tool in order to use the tokenized card instead of the original credit card info given.
+
+    **When using Tokenization, you should not send original credit card info as: `card_number`, `card_expiry_month` and `card_expiry_year`.**
+
+
+    ---
+
+
+    ## Recurring Billing
+
+    #### Create a Subscription
+
+    To create a subscription, you should define when and how much to charge your customer. To start billing, simply create a subscription and then the Gateway will handle the entire billing flow for you. The charging period should be defined by the **interval** and **interval_count** fields. Being **interval** the period of time to calculate the next charge and **interval_count** being the **interval** number that we should wait until the next charge. For example:
+
+    * Charging every month: **interval = month** and **interval_count = 1**;
+    * Charging every 3 weeks: **interval = week** and **interval_count = 3**.
+
+    Subscriptions should also receive the **start_date** and **end_date** fields, which means the start and end date of the subscription, respectively. The first charge will always occur on the **start_date**. The next payment cycles will be automatically calculated by the Gateway. The whole period until **start_date** will be considered as trial and you can charge your customer for this period filling the **trial_amount** field.
+
+    Beware: filling **trial_amount** and a **start_date** too close may result in undesirable behavior. It is recommended to use **trial_amount** with a **start_date** equals to the current date + the configured interval.
+
+    The subscription routine runs every day at **00:59 PST (07:59 UTC)** and performs the charge for all the merchant accounts. The system collects the active subscriptions that should be charged by comparing the start_date (before the current date). This means that a monthly subscription created with the **start_date** equals August 1st will be charged every month on the 2nd at 00:59 PST.
+
+    #### Cancel a Subscription
+
+    To cancel a subscription, you should use the Subscription ID response field to reference the subscription being canceled. This endpoint simply cancels the subscription and stops charging it.
+
+    #### Renew a Subscription
+
+    You can renew a subscription by updating its **end_date** field, you should use the Subscription ID response field to reference the subscription being renewed.
+    
+    
+    ---
+
+
+    ## Check Transactions
+
+    The Check Transactions API makes it possible to send and receive money between U.S.A. bank accounts. It does this by using standards implemented by banks and the Federal Reserve for transferring money called ACH. It works through an account validation process, and then issuing the check. Settlement generally occurs within a few hours, when you can safely confirm that the transaction was successfully settled and funds deducted from the customer’s account.
+
+    Before starting up with actual API documentation, there are a few concepts that must be understood. On check card processing, there are two main concepts which are fundamental parts of how funds go from the customer’s account to the merchant’s bank. Those are:
+
+    **Authorization**: performing a validation of the bank information while not blocking funds from the customer’s account. This means the balance is still available for the customer and there’s no guarantee of deduction yet.
+    
+    **Settlement**: a process, that usually happens every 2 hours, to get all authorizations grouped into a batch of transactions that are then submitted to the processor to deduct the funds from the customer’s account. At this point it is safe to allow access to the product, either by shipping the product or delivering a digital good or service.
+
+    In order to keep those two concepts completely manageable by the merchant, on Charge Gateway™ we have implemented a Transaction Event concept, which is an append-only log, that keeps the whole transaction lifecycle intact. There are two different types of events for check transactions:
+
+    A **sale**, running the authorization and settlement portions, is not real-time. This means you will need to use the reporting endpoints to check for settlement later. If the **sale** does not settle, a **refund** request will act as a cancellation. If the transaction has already settled, a **refund** request will appear as a credit to the customer’s account.
+
+    **Please keep in mind that card and check transactions work differently given their nature, so it's very important to not assume a transaction was processed just by having a success as true on the responses.**
+
+    ####  Validate account number
+
+    In order to prevent fraudulent check transactions, we provide a simple way to check if a provided account number is valid. All you need is the account number.
+
+    #### Charge an Account
+
+    Charging a bank account using Charge Gateway is simple. All you need is the bank account information of the person or entity you want to credit or debit. Then decide how much you want to send or receive from their bank account.
+
+    #### Refund an Account
+
+    Refunding a bank account using Charge Gateway is simple. A refund stops the transaction from being settled and don’t remove funds from the customer.
+
+
+    ---
+
+
+    ## Reporting
+
+    #### List all Transactions
+
+    In order to list all the transactions that have been sent through the gateway, you can use this endpoint. Please note that for every new event that is sent under the same transaction, the transaction’s **updated_at** field is updated.
+
+    Filtering is enabled to this endpoint through query parameter **search**. So whenever searching for a field, make sure to submit it through the endpoint’s query parameters, for example: 
+    
+      `https://gateway-api.charge.io/api/transactions?search[first_name]=John&search[last_name]=Doe`
+    
+    Filter types are described below:
+
+      * **starts with** which matches for records on a SQL **LIKE** fashion, e.g.: a string “Cha“ will match “Charge”;
+      * **exact comparison** which matches for records through exact comparison, case sensitive, e.g.: a string “charge” will NOT match “Charge”;
+      * **date** which matches for records through SQL date, and these fields should be provided on Y-m-d H:i:s format, e.g.: 2025-01-01 17:59:00
+
+    Also, this endpoint provides pagination to navigate through record sets. Pagination information can be found on meta response field. The pages always return 50 records at a time. While using reporting capabilities, make sure to monitor rate limits through **X-RateLimit-Limit** and **X-RateLimit-Remaining** response headers.
+    
+
+    ---
+
+
+    ## Tokenization
+
+    #### Card Tokenization
+
+    The idea is to swap payment card data with a randomized number in the same format with no intrinsic value of its own. The difference from encryption is that the original pattern is still “locked”. Encrypted values can be decrypted with the key, brute computing force, or through a hacked/stolen key. Tokens, by the other hand, have no mathematical relationship between the token and its original number, then it cannot be decrypted. De-tokenization can only be done by the Charge tokenization system.
+
+    This endpoint tokenizes a given credit card number. You will need to provide the card number you wish to store and then you will be able to retrieve the card number with the original number out of the token provided on the response.
+
+    #### Card Detokenize
+
+    This endpoint detokenizes a given credit card token. You will need to provide the token you wish to detokenize and as part of the response you’ll get the original number previously stored and it’s expiration month and year.
+
+    #### ACH Tokenization
+
+    The idea is to swap payment ACH data with an encrypted string. De-tokenization can only be done by the Charge tokenization system.
+
+    This endpoint tokenizes a given account, check and routing number. You will need to provide these three parameters you wish to store and then you will be able to retrieve the token provided on the response.
+
+    #### ACH Detokenize
+
+    This endpoint detokenizes a given ACH token. You will need to provide the token you wish to detokenize and as part of the response you’ll get the original number previously stored and it’s expiration month and year.
+
+
+    **For more information and a demo about our gateway, please contact support@charge.io.**    
   title: "Charge Payments"
-host: "gateway-api.charge.io"
-basePath: "/api"
-tags:
-- name: "Card Transactions"
-- name: "Tokenization"
-schemes:
-- "https"
+  host: "gateway-api.charge.io"
+  basePath: "/api"
+  tags:
+  - name: "Card Transactions"
+  - name: "Recurring Billing"
+  - name: "Check Transactions"
+  - name: "Reporting"
+  - name: "Tokenization"
+  schemes:
+  - "https"
 paths:
+  /transactions/sale:
+    post:
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - "Card Transactions"
+      summary: "Charge a Credit Card"
+      description: ""
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/TransactionRequest"
+      responses: 
+        200:
+          description: "successful operation"
+          schema: 
+            type: "object"
+            properties: 
+              transaction:
+                $ref: "#/definitions/Transaction"
+
+  /transactions/auth:
+    post:
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - "Card Transactions"
+      summary: "Authorize and Charge Later"
+      description: ""
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/TransactionRequest"
+      responses: 
+        200:
+          description: "successful operation"
+          schema: 
+            type: "object"
+            properties: 
+              transaction:
+                $ref: "#/definitions/Transaction"
+  
+  /transactions/{transaction_id}/capture:
+    post:
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - "Card Transactions"
+      summary: "Capture Transaction"
+      description: ""
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "path"
+        name: "transaction_id"
+        type: "string"
+        required: true
+        description: "Transaction ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/CaptureTransactionRequest"
+      responses: 
+        200:
+          description: "successful operation"
+          schema: 
+            type: "object"
+            properties: 
+              transaction:
+                $ref: "#/definitions/Transaction"
+
+  /transactions/{transaction_id}/refund:
+    post:
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - "Card Transactions"
+      summary: "Capture Transaction"
+      description: ""
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "path"
+        name: "transaction_id"
+        type: "string"
+        required: true
+        description: "Transaction ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/RefundingTransactionRequest"
+      rresponses: 
+        200:
+          description: "successful operation"
+          schema: 
+            type: "object"
+            properties: 
+              transaction:
+                $ref: "#/definitions/Transaction"
+
+  /transactions/{transaction_id}/void:
+    post:
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - "Card Transactions"
+      summary: "Voiding a Transaction"
+      description: ""
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "path"
+        name: "transaction_id"
+        type: "string"
+        required: true
+        description: "Transaction ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/VoidingTransactionRequest"
+      responses: 
+        200:
+          description: "successful operation"
+          schema: 
+            type: "object"
+            properties: 
+              transaction:
+                $ref: "#/definitions/Transaction"
+            
+  
+  /subscriptions:
+    post:
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - "Recurring Billing"
+      summary: "Create a Credit Card Subscription"
+      description: ""
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/CreateSubscriptionRequest"
+      responses: 
+        200:
+          description: "successful operation"
+          schema: 
+            type: "object"
+            properties: 
+              subscription:
+                $ref: "#/definitions/Subscription"
+
+  /check/subscriptions:
+    post:
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - "Recurring Billing"
+      summary: "Create a Check Subscription"
+      description: ""
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/CreateSubscriptionRequest"
+      responses: 
+        200:
+          description: "successful operation"
+          schema: 
+            type: "object"
+            properties: 
+              subscription:
+                $ref: "#/definitions/Subscription"
+
+  /subscriptions/{subscription_id}:
+    delete:
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - "Recurring Billing"
+      summary: "Cancel a Subscription"
+      description: ""
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "path"
+        name: "subscription_id"
+        type: "string"
+        required: true
+        description: "The Subscription record ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+      responses: 
+        200:
+          description: "successful operation"
+          schema: 
+            type: "object"
+            properties: 
+              subscription:
+                $ref: "#/definitions/Subscription"
+    put:
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - "Recurring Billing"
+      summary: "Renew a Subscription"
+      description: ""
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "path"
+        name: "subscription_id"
+        type: "string"
+        required: true
+        description: "The Subscription record ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/RenewSubscriptionRequest"
+      responses: 
+        200:
+          description: "successful operation"
+          schema: 
+            type: "object"
+            properties: 
+              subscription:
+                $ref: "#/definitions/Subscription"
+    
+
+  /checks/verify_account:
+    post:
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - "Check Transactions"
+      summary: "Validate account number"
+      description: ""
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/ValidateAccountNumberRequest"
+      responses: 
+        200:
+          description: "successful operation"
+          schema: 
+            $ref: "#/definitions/AccountNumberValidation"
+
+  /checks/sale:
+    post:
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - "Check Transactions"
+      summary: "Charge an Account"
+      description: ""
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/ChargeAccountRequest"
+      responses: 
+        200:
+          description: "successful operation"
+          schema: 
+            type: "object"
+            properties: 
+              transaction:
+                $ref: "#/definitions/Transaction"
+
+  /checks/{transaction_id}/refund:
+    post:
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - "Check Transactions"
+      summary: "Refund an Account"
+      description: ""
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/RefundAccountRequest"
+      responses: 
+        200:
+          description: "successful operation"
+          schema: 
+            type: "object"
+            properties: 
+              transaction:
+                $ref: "#/definitions/Transaction"
+
+
+  /transactions: 
+    get:
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - "Reporting"
+      summary: "List all Transactions"
+      description: ""
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "query"
+        name: "merchant_transaction_id"
+        schema:
+          type: string
+        required: false
+        description: "Filter Type: starts with"
+      - in: "query"
+        name: "card_number"
+        schema:
+          type: string
+        required: false
+        description: "Filter Type: starts with"
+      - in: "query"
+        name: "first_name"
+        schema:
+          type: string
+        required: false
+        description: "Filter Type: starts with"
+      - in: "query"
+        name: "last_name"
+        schema:
+          type: string
+        required: false
+        description: "Filter Type: starts with"
+      - in: "query"
+        name: "email"
+        schema:
+          type: string
+        required: false
+        description: "Filter Type: starts with"
+      - in: "query"
+        name: "mobile_phone"
+        schema:
+          type: string
+        required: false
+        description: "Filter Type: starts with"
+      - in: "query"
+        name: "user_id"
+        schema:
+          type: string
+        required: false
+        description: "Filter Type: exact comparison"
+      - in: "query"
+        name: "city"
+        schema:
+          type: string
+        required: false
+        description: "Filter Type: starts with"
+      - in: "query"
+        name: "state"
+        schema:
+          type: string
+        required: false
+        description: "Filter Type: exact comparison"
+      - in: "query"
+        name: "zip"
+        schema:
+          type: string
+        required: false
+        description: "Filter Type: exact comparison"
+      - in: "query"
+        name: "shipping_city"
+        schema:
+          type: string
+        required: false
+        description: "Filter Type: starts with"
+      - in: "query"
+        name: "shipping_state"
+        schema:
+          type: string
+        required: false
+        description: "Filter Type: exact comparison"
+      - in: "query"
+        name: "shipping_zip"
+        schema:
+          type: string
+        required: false
+        description: "Filter Type: exact comparison"
+      - in: "query"
+        name: "created_at_gte"
+        schema:
+          type: string
+          format: date-time
+        required: false
+      - in: "query"
+        name: "created_at_lte"
+        schema:
+          type: string
+          format: date-time
+        required: false
+      - in: "query"
+        name: "updated_at_gte"
+        schema:
+          type: string
+          format: date-time
+        required: false
+      - in: "query"
+        name: "updated_at_lte"
+        schema:
+          type: string
+          format: date-time
+        required: false
+      responses: 
+        200:
+          description: "successful operation"
+          schema: 
+            type: "object"
+            properties: 
+              transactions:
+                type: "array"
+                items:
+                  $ref: "#/definitions/Transaction"
+              meta:
+                type: "object"
+                properties: 
+                  last_page:
+                    type: "number"
+                    format: "int32"
+                    description: "The last page for this query"
+                    example: "1"
+                  current_page:
+                    type: "number"
+                    format: "int32"
+                    description: "The current page for this query"
+                    example: "1"
+                  total:
+                    type: "number"
+                    format: "int32"
+                    description: "The total count of records for this page"
+                    example: "1"
+                  
+
+   
+
+
+
+
   /tokens/tokenize:
     post:
       security:
@@ -116,20 +837,23 @@ paths:
         required: true
         schema:
           $ref: "#/definitions/TokenizeRequest"
-      responses:
+      responses: 
         200:
           description: "successful operation"
-          schema:
-            $ref: "#/definitions/TokenizeResponse"
-  /transactions/sale:
+          schema: 
+            type: "object"
+            properties: 
+              card_token:
+                $ref: "#/definitions/TokenizeCardToken"
+
+  /tokens/detokenize:
     post:
       security:
       - ApiKeyAuth: []
       tags:
-      - "Card Transactions"
-      summary: "Charge a Credit Card"
+      - "Tokenization"
+      summary: "Card Tokenize"
       description: ""
-      operationId: "addPet"
       consumes:
       - "application/json"
       produces:
@@ -139,53 +863,78 @@ paths:
         name: "body"
         required: true
         schema:
-          $ref: "#/definitions/ChargeCreditCardRequest"
+          $ref: "#/definitions/DetokenizeRequest"
       responses: 
         200:
           description: "successful operation"
           schema: 
-            $ref: "#/definitions/ChargeCreditCardResponse"
+            type: "object"
+            properties: 
+              card_token:
+                $ref: "#/definitions/DetokenizeCardToken"
+
+  /tokens/ach_tokenize:
+    post:
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - "Tokenization"
+      summary: "ACH Tokenize"
+      description: ""
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/ACHTokenizeRequest"
+      responses: 
+        200:
+          description: "successful operation"
+          schema: 
+            type: "object"
+            properties: 
+              ach_token:
+                $ref: "#/definitions/ACHTokenizeCardToken"
+
+  /tokens/ach_detokenize:
+    post:
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - "Tokenization"
+      summary: "ACH Detokenize"
+      description: ""
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/ACHDetokenizeRequest"
+      responses: 
+        200:
+          description: "successful operation"
+          schema: 
+            type: "object"
+            properties: 
+              card_token:
+                $ref: "#/definitions/ACHDetokenizeCardToken"
+
+
 securityDefinitions: 
   ApiKeyAuth:
     type: apiKey
     in: header
     name: Authorization
 definitions:
-  TokenizeRequest:
-    type: "object"
-    properties:
-      card_number:
-        type: "string"
-        description: "This token’s ID"
-      card_expiry_month:
-        type: "string"
-        description: "The expiration month with two positions"
-        example: "12"
-      card_expiry_year:
-        type: "string"
-        description: "The expiration year with four positions"
-        example: "2025"
-  TokenizeResponse:
-    type: "object"
-    properties:
-      card_token:
-        type: "object"
-        properties:
-          id:
-            type: "string"
-            format: "uuid"
-            description: "This token’s ID"
-            example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28" 
-          merchant_id:
-            type: "string"
-            format: "uuid"
-            description: "The token’s merchant ID"
-            example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28" 
-          card_token:
-            type: "string"
-            description: "The tokenized credit card"
-            example: "4111098765431111" 
-  ChargeCreditCardRequest:
+  TransactionRequest:
     type: "object"
     properties:
       processor_id:
@@ -193,13 +942,17 @@ definitions:
         format: "uuid"
         required: false
         description: "The Processor record ID. If processor_id has not been provided, the gateway will pick one randomly."
-        example: 41f00869-d7b3-413e-9476-9ef1a8bc2f28
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
       amount:
         type: "number"
         format: "float"
         required: true
         description: "Total transaction amount"
         example: "3.56"
+      capture: 
+        type: "boolean"
+        required: false
+        description: "If your processor is configured with the Auto Capture feature, you may call an auth or sale request with a capture=false flag. The transactions will be automatically captured by gateway up to 24h."
       card_number:
         type: "string"
         required: true
@@ -245,6 +998,12 @@ definitions:
         required: false
         description: "Customer’s phone"
         example: "11231231234"
+      avs_enabled:
+        type: "number"
+        format: "int32"
+        required: false
+        description: "Flag to enable AVS capabilities (1 for enabled / 0 for not enabled)"
+        example: "1"
       street_address_1:
         type: "string"
         required: false
@@ -316,93 +1075,911 @@ definitions:
         description: "The ID of the Identification document for the customer. Only required to PayVisionCard processor. The documents accepted are [CPF : Tax payer identification number for individuals](https://en.wikipedia.org/wiki/Cadastro_de_Pessoas_F%C3%ADsicas) and [CNPJ : Tax payer identification number for businesses](https://en.wikipedia.org/wiki/CNPJ)"
         example: "00003456790"
       meta:
-        type: "json"
+        type: "object"
         required: false
         description: "A fields’ list related to merchant’s business"
-        example: "“meta”: {}"
-  ChargeCreditCardResponse:
+      threeds_enabled:
+        type: "boolean"
+        required: false
+        description: "Flag to enable 3DS capabilities. Required for 3DS"
+        example: "true"
+      threeds_xid:
+        type: "string"
+        required: false
+        description: "Base-64 encoded Transaction ID. Required for 3DS"
+        example: "MDAwMDAwMDAwMDEyMzQ2Njc4OTA="
+      threeds_eci:
+        type: "string"
+        required: false
+        description: "Electronic commerce indicator. Required for 3DS"
+        example: "05"
+      threeds_cavv:
+        type: "string"
+        required: false
+        description: "Cardholder authentication verification value. Required for 3DS"
+        example: "jI3JBkkaQ1p8CBAAABy0CHUAAAA="
+      threeds_status:
+        type: "string"
+        required: false
+        description: "Result of 3DS request. Required for 3DS"
+        example: "Y"
+      threeds_version:
+        type: "number"
+        format: "int32"
+        required: false
+        description: "Version of 3DS protocol used. Default 1."
+        example: "1"
+      passenger_transport:
+        type: "array"
+        description: "Airline & Travel Data"
+        required: false
+        items:
+            type: "object"
+            properties:
+              ticket_number:
+                type: "string"
+                description: "The ticket number for this passenger"
+                example: "AAL1234567890"
+              ticket_issuing_carrier_name:
+                type: "string"
+                description: "The name of carrier that generated the tickets for airline travel"  
+                example: "American Airlines"       
+              ticket_issuing_carrier_code:
+                type: "number"
+                description: "The [IATA code](https://en.wikipedia.org/wiki/IATA_airport_code) for the carrier that issued the ticket"
+                example: "AA"
+              ticket_issuing_city:
+                type: "string"
+                description: "The city where the ticket has been issued"  
+                example: "Los Gatos"       
+              ticket_issuing_date:
+                type: "string"
+                description: "The date the ticket was issued in Y-m-d format, with trailing zeros"  
+                example: "2025-05-01"       
+              passenger_name:
+                type: "string"
+                description: "Passenger’s name"  
+                example: "John Doe"       
+              restricted_ticket_indicator:
+                type: "boolean"
+                description: "If the ticket can be refundable or not. Defaults to false"  
+                example: "false"
+              legs:
+                type: "array" 
+                description: "Whenever the issuing carrier is not available, use the carrier that has the majority of legs on this trip. The dates should be supplied on the first leg departure airport timezone."   
+                items:
+                  type: "object"
+                  properties:
+                    carrier_code:
+                      type: "string"
+                      description: "The carrier’s [IATA code](https://en.wikipedia.org/wiki/IATA_airport_code) for the leg"
+                      example: "AA"
+                    service_class:
+                      type: "string"
+                      description: "The [service class](https://en.wikipedia.org/wiki/Fare_basis_code) for the leg"
+                      example: "F"
+                    departure_airport:
+                      type: "string"
+                      description: "The departure airport’s [IATA code](https://en.wikipedia.org/wiki/IATA_airport_code)"
+                      example: "SFO"
+                    destination_airport: 
+                      type: "string"
+                      description: "The destination airport’s [IATA code](https://en.wikipedia.org/wiki/IATA_airport_code)"
+                      example: "LAX"
+                    departure_date: 
+                      type: "string"
+                      description: "The departure date in Y-m-d format, with trailing zeros"
+                      example: "2025-05-01"
+                    flight_number:
+                      type: "string"
+        
+                      description: "The flight number for the leg"
+                      example: "1234"
+                    fare_basis: 
+                      type: "string"
+                      description: "The [fare basis](https://en.wikipedia.org/wiki/Fare_basis_code) for the leg"
+                      example: "VLW4MQC1"
+                    fare:
+                      type: "number"
+                      format: "float"
+                      description: "The total fare for the leg. The amount provided should match the sum of passenger_transport.*.legs.*.fare records."
+                      example: "1.50"
+      dynamic_descriptor: 
+        type: "string"
+        required: false
+        description: "The credit card statement descriptor"
+        example: "MYBUSINESSINC"  
+      tokenization_enabled:
+        type: "boolean"
+        required: false
+        description: "Flag to enable Tokenization"
+        example: true
+      card_token: 
+        type: string
+        required: false
+        description: "The token value of the tokenized credit card"
+        example: "4111098765431111"
+  
+  CaptureTransactionRequest:
     type: "object"
     properties:
-      transaction:
-        type: "object"
-        properties:
-          id:
-            type: "string"
-            format: "uuid"
-            description: "This transaction’s ID"
-            example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
-          merchant_id:
-            type: "string"
-            format: "uuid"
-            description: "The user’s merchant ID"
-            example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
-          user_id:
-            type: "string"
-            format: "uuid"
-            description: "The user’s ID"
-            example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
-          processor_id:
-            type: "string"
-            format: "uuid"
-            description: "The processor’s ID"
-            example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
-          merchant_transaction_id:
-            type: "string"
-            description: "The merchant assigned identifier"
-            example: "my-order-id-0001"
-          events:
-            type: "array"
-            items:
-              type: "object"
-              properties:
-                id: 
-                  type: "string"
-                  format: "uuid"
-                  description: "This event’s ID"
-                  example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28" 
-                success: 
-                  type: "boolean"
-                  description: "If the event was a successful event or not"
-                  example: "true"
-                event_type: 
-                  type: "string"
-                  description: "The type of event being performed"
-                  example: "auth, capture, sale, void, refund"
-                amount: 
-                  type: "number"
-                  format: "float"
-                  description: "Total event amount"
-                  example: "3.56"
-                processor_code: 
-                  type: "string"
-                  description: "The processor response code"
-                  example: "00"
-                processor_message: 
-                  type: "string"
-                  description: "A human readable message from the processor"
-                  example: "APPROVAL V12341"
-                processor_transaction_id: 
-                  type: "string"
-                  description: "A processor assigned identifier"
-                  example: "00000000143242"
-                updated_at: 
-                  type: "string"
-                  format: "date-time"
-                  description: "Last time this event was updated, on [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) UTC"
-                  example: "2018-02-16T16:33:40+00:00"
-                created_at: 
-                  type: "string"
-                  format: "date-time"
-                  description: "Time that event was created, on [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) UTC"
-                  example: "2018-02-16T16:33:40+00:00"
-          updated_at: 
-            type: "string"
-            format: "date-time"
-            description: "Last time this transaction was updated, on [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) UTC"
-            example: "2018-02-16T16:33:40+00:00"
-          created_at: 
-            type: "string"
-            format: "date-time"
-            description: "Last  time this transaction was created, on [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) UTC"
-            example: "2018-02-16T16:33:40+00:00"
-                 
+      amount:
+        type: "number"
+        format: "float"
+        required: true
+        description: "Total transaction amount"
+        example: "3.56"
+      passenger_transport:
+        type: "array"
+        required: false
+        items:
+          type: "object"
+          properties:
+            passenger_id:
+              type: "string"
+              format: "uuid"
+              description: "The Passenger ID"
+              example: "88e057c7-3d95-428f-b7c2-183b46aab443"
+            amount:
+              type: "number"
+              format: "float"
+              description: "The event amount associated to this passenger. The amount provided should match the sum of passenger_transport.*.amount records."
+              example: "3.50"
+
+  VoidingTransactionRequest:
+    type: "object"
+    properties:
+      amount:
+        type: "number"
+        format: "float"
+        required: true
+        description: "Total transaction amount"
+        example: "3.56"
+      passenger_transport:
+        type: "array"
+        required: false
+        items:
+          type: "object"
+          properties:
+            passenger_id:
+              type: "string"
+              format: "uuid"
+              description: "The Passenger ID"
+              example: "88e057c7-3d95-428f-b7c2-183b46aab443"
+            amount:
+              type: "number"
+              format: "float"
+              description: "The event amount associated to this passenger. The amount provided should match the sum of passenger_transport.*.amount records."
+              example: "3.50"
+
+  RefundingTransactionRequest:
+    type: "object"
+    properties:
+      amount:
+        type: "number"
+        format: "float"
+        required: true
+        description: "Total transaction amount"
+        example: "3.56"  
+      passenger_transport:
+        type: "array"
+        required: false
+        items:
+          type: "object"
+          properties:
+            passenger_id:
+              type: "string"
+              format: "uuid"
+              description: "The Passenger ID"
+              example: "88e057c7-3d95-428f-b7c2-183b46aab443"
+            amount:
+              type: "number"
+              format: "float"
+              description: "The event amount associated to this passenger. The amount provided should match the sum of passenger_transport.*.amount records."
+              example: "3.50"             
+
+  CreateSubscriptionRequest:
+    type: "object"
+    properties:
+      processor_id:
+        type: "string"
+        format: "uuid"
+        required: false
+        description: "The Processor record ID. If processor_id has not been provided, the gateway will pick one randomly."
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+      description:
+        type: "string"
+        required: true
+        description: "A brief description of the current subscription"
+        example: "Monthly tennis club signature"
+      start_date:
+        type: "string"
+        required: true
+        description: "The date and time when subscription should start Y-m-d h:m:s format."
+        example: "2018-10-01 12:00:00"
+      end_date:
+        type: "string"
+        required: true
+        description: "The date and time when subscription should end Y-m-d h:m:s format."
+        example: "2019-10-01 12:00:00"
+      interval:
+        type: "string"
+        required: true
+        description: "Time period measure you require (day, week, month)"
+        example: "day"
+      interval_count:
+        type: "number"
+        format: "int32"
+        required: true
+        description: "Number of interval between payments"
+        example: "10"
+      amount: 
+        type: "number"
+        format: "float"
+        required: true
+        description: "Amount to be charged every recurring cycle"
+        example: "3.56"
+      trial_amount: 
+        type: "number"
+        format: "float"
+        required: false
+        description: "The amount that will be charged in subscription creation"
+        example: "3.56"
+      card_number: 
+        type: "string"
+        required: false
+        description: "The credit card to charge. Required for credit card subscriptions only"
+        example: "411111111111111"
+      card_expiry_month: 
+        type: "string"
+        required: false
+        description: "The expiration month with two positions. Required for credit card subscriptions only"
+        example: "01"
+      card_expiry_year: 
+        type: "string"
+        required: false
+        description: "The expiration year with four positions. Required for credit card subscriptions only"
+        example: "2021"
+      card_cvv:
+        type: "string"
+        required: false
+        description: "3 or 4 digit [card verification code](https://en.wikipedia.org/wiki/Card_security_code)"
+        example: "123"
+      account_number:
+        type: "string"
+        required: true
+        description: "The bank account to charge. Required for check subscriptions only"
+        example: "10000000000000"
+      check_number: 
+        type: "string"
+        required: true
+        description: "The identifying number of the “check”. This should be unique per transaction."
+        example: "100000"
+      routing_number:
+        type: string
+        required: true
+        description: "The ABA routing number of the bank account you wish to charge."
+        example: "061103852"
+      merchant_subscription_id:
+        type: "string"
+        required: false
+        description: "A merchant assigned identifier (your subscription ID)"
+        example: "my-subscription-id-0001"
+      first_name:
+        type: "string"
+        require: true
+        description: "Customer’s first name"
+        example: "John"
+      last_name:
+        type: "string"
+        require: true
+        description: "Customer’s last name"
+        example: "Doe"
+      email:
+        type: "string"
+        require: true
+        description: "Customer’s email"
+        example: "support@charge.io"
+      mobile_phone:
+        type: "string"
+        require: false
+        description: "Customer’s phone"
+        example: "11231231234"
+      street_address_1:
+        type: "string"
+        required: false
+        description: "Billing address first line (street address)"
+        example: "1104 Highland Ave."
+      street_address_2:
+        type: "string"
+        required: false
+        description: "Billing address second line (suite, apt, etc)"
+        example: "Suite M"
+      city:
+        type: "string"
+        required: false
+        description: "Billing address city"
+        example: "Manhattan Beach"
+      state:
+        type: "string"
+        required: false
+        description: "Billing address state abbreviation"
+        example: "CA"
+      country:
+        type: "string"
+        required: false
+        description: "Billing address country abbreviation"
+        example: "US"
+      zip:
+        type: "string"
+        required: false
+        description: "Billing address postal code"
+        example: "90266"
+      shipping_street_address_1:
+        type: "string"
+        required: false
+        description: "Shipping address first line (street address)"
+        example: "1104 Highland Ave."
+      shipping_street_address_2:
+        type: "string"
+        required: false
+        description: "Shipping address second line (suite, apt, etc)"
+        example: "Suite M"
+      shipping_city:
+        type: "string"
+        required: false
+        description: "Shipping address city"
+        example: "Manhattan Ave."
+      shipping_state:
+        type: "string"
+        required: false
+        description: "Shipping address state abbreviation"
+        example: "CA"
+      shipping_country:
+        type: "string"
+        required: false
+        description: "Shipping address country abbreviation"
+        example: "US"
+      shipping_zip:
+        type: "string"
+        required: false
+        description: "Shipping address postal code"
+        example: "90266"
+      status_url:
+        type: "string"
+        required: false
+        description: "A Valid HTTP/HTTPS url to be reached on every updated on the subscription"
+        example: "https://yourdomain.com/status/callback"
+
+  RenewSubscriptionRequest:
+    type: "object"
+    properties:
+      end_date:
+        type: "string"
+        format: "date-time"
+        description: "The new date and time when subscription should end Y-m-d h:m:s format."
+        example: "2020-10-01 12:00:00"
+
+  ValidateAccountNumberRequest:
+    type: "object"
+    properties:
+      account_number:
+        type: "string"
+        required: true
+        description: "This parameter is required in order to validate your account number and it must be numeric."
+        example: "1234567890"
+
+  ChargeAccountRequest:
+    type: "object"
+    properties: 
+      processor_id:
+        type: "string"
+        format: "uuid"
+        required: false
+        description: "The Processor record ID. If processor_id has not been provided, the gateway will pick one randomly."
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+      merchant_transaction_id:
+        type: "string"
+        required: true
+        description: "A merchant assigned identifier (your transaction ID)"
+        example: "my-order-id-0001"
+      amount:
+        type: "number"
+        format: "float"
+        required: true
+        description: "Total transaction amount"
+        example: "3.56"
+      account_number:
+        type: "string"
+        required: true
+        description: "The bank account to charge"
+        example: "10000000000000"
+      check_number:
+        type: "string"
+        required: true
+        description: "The identifying number of the “check”. This should be unique per transaction."
+        example: "100000"
+      routing_number:
+        type: "string"
+        required: true
+        description: "The ABA routing number of the bank account you wish to charge."
+        example: "061103852"
+      first_name:
+        type: "string"
+        required: false
+        description: "Customer’s first name. first_name is required and minimum of 2 chars when running transactions with Skrill Card processor."
+        example: "John"
+      last_name:
+        type: "string"
+        required: false
+        description: "Customer’s last name. last_name is required and minimum of 2 chars when running transactions with Skrill Card processor."
+        example: "Doe"
+      skip_validations:
+        type: "boolean"
+        required: false
+        description: "Set this field as true to skip validations. Default: false"
+        example: "true"
+
+  RefundAccountRequest:
+    type: "object"
+    properties: 
+      amount: 
+        type: "number"
+        format: "float"
+        description: "Total transaction amount"
+        example: "3.56"
+
+
+  TransactionsListRequest:
+    type: "object"
+    description: "Trnsactions filters"
+    properties:
+      merchant_transaction_id: 
+        type: "string"
+        required: false
+        description: "Filter Type: starts with"
+      card_number: 
+        type: "string"
+        required: false
+        description: "Filter Type: starts with"
+      first_name: 
+        type: "string"
+        required: false
+        description: "Filter Type: starts with"
+      last_name: 
+        type: "string"
+        required: false
+        description: "Filter Type: starts with"
+      email: 
+        type: "string"
+        required: false
+        description: "Filter Type: starts with"
+      mobile_phone: 
+        type: "string"
+        required: false
+        description: "Filter Type: starts with"
+      user_id: 
+        type: "string"
+        required: false
+        description: "Filter Type: exact comparison"
+      city: 
+        type: "string"
+        required: false
+        description: "Filter Type: starts with"
+      state: 
+        type: "string"
+        required: false
+        description: "Filter Type: exact comparison"
+      zip: 
+        type: "string"
+        required: false
+        description: "Filter Type: exact comparison"
+      shipping_city: 
+        type: "string"
+        required: false
+        description: "Filter Type: starts with"
+      shipping_state: 
+        type: "string"
+        required: false
+        description: "Filter Type: exact comparison"
+      shipping_zip: 
+        type: "string"
+        required: false
+        description: "Filter Type: exact comparison"
+      created_at_gte: 
+        type: "string"
+        format: "date-time"
+        required: false
+        description: "Min date"
+      created_at_lte: 
+        type: "string"
+        format: "date-time"
+        required: false
+        description: "Max date"
+      updated_at_gte: 
+        type: "string"
+        format: "date-time"
+        required: false
+        description: "Min date"
+      updated_at_lte: 
+        type: "string"
+        format: "date-time"
+        required: false
+        description: "Max date"
+      
+
+  TokenizeRequest:
+    type: "object"
+    properties:
+      card_number:
+        type: "string"
+        description: "This token’s ID"
+        example: "4111111111111111"
+      card_expiry_month:
+        type: "string"
+        description: "The expiration month with two positions"
+        example: "12"
+      card_expiry_year:
+        type: "string"
+        description: "The expiration year with four positions"
+        example: "2025"
+    
+  DetokenizeRequest:
+    type: "object"
+    properties:
+      card_token:
+        type: "string"
+        description: "The card token to de-tokenize"
+        example: "4111098765431111"
+ 
+  ACHTokenizeRequest:
+    type: "object"
+    properties:
+      account_number:
+        type: "string"
+        description: "The account number to tokenize"
+        example: "74022783922013"
+      check_number:
+        type: "string"
+        description: "The check number to tokenize"
+        example: "411785"
+      routing_number:
+        type: "string"
+        description: "The routing number"
+        example: "061103852"
+
+  ACHDetokenizeRequest:
+    type: "object"
+    properties:
+      token:
+        type: "string"
+        description: "The token to de-tokenize"
+        example: "57LVNSEW6K1LTUQ2MSP92NCAN7V057A7KST3BM"
+
+
+  Transaction:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+        description: "This transaction’s ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+      merchant_id:
+        type: "string"
+        format: "uuid"
+        description: "The user’s merchant ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+      user_id:
+        type: "string"
+        format: "uuid"
+        description: "The user’s ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+      processor_id:
+        type: "string"
+        format: "uuid"
+        description: "The processor’s ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+      merchant_transaction_id:
+        type: "string"
+        description: "The merchant assigned identifier"
+        example: "my-order-id-0001"
+      events:
+        type: "array"
+        items:
+          type: "object"
+          properties:
+            id: 
+              type: "string"
+              format: "uuid"
+              description: "This event’s ID"
+              example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28" 
+            success: 
+              type: "boolean"
+              description: "If the event was a successful event or not"
+              example: "true"
+            event_type: 
+              type: "string"
+              description: "The type of event being performed"
+              example: "auth, capture, sale, void, refund"
+            amount: 
+              type: "number"
+              format: "float"
+              description: "Total event amount"
+              example: "3.56"
+            processor_code: 
+              type: "string"
+              description: "The processor response code"
+              example: "00"
+            processor_message: 
+              type: "string"
+              description: "A human readable message from the processor"
+              example: "APPROVAL V12341"
+            processor_transaction_id: 
+              type: "string"
+              description: "A processor assigned identifier"
+              example: "00000000143242"
+            updated_at: 
+              type: "string"
+              format: "date-time"
+              description: "Last time this event was updated, on [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) UTC"
+              example: "2018-02-16T16:33:40+00:00"
+            created_at: 
+              type: "string"
+              format: "date-time"
+              description: "Time that event was created, on [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) UTC"
+              example: "2018-02-16T16:33:40+00:00"
+      updated_at: 
+        type: "string"
+        format: "date-time"
+        description: "Last time this transaction was updated, on [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) UTC"
+        example: "2018-02-16T16:33:40+00:00"
+      created_at: 
+        type: "string"
+        format: "date-time"
+        description: "Last  time this transaction was created, on [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) UTC"
+        example: "2018-02-16T16:33:40+00:00"
+
+  Subscription:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+        description: "This subscription’s ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+      merchant_id:
+        type: "string"
+        format: "uuid"
+        description: "The user’s merchant ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+      user_id:
+        type: "string"
+        format: "uuid"
+        description: "The user’s ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+      status: 
+        type: "string"
+        description: "Result of Subscription request"
+        example: "trialing"
+      description:
+        type: "string"
+        description: "A brief description of the current subscription"
+        example: "Monthly tennis club signature"
+      interval:
+        type: "string"
+        description: "Time period measure you require (day, week, month)"
+        example: "day"
+      interval_count: 
+        type: "string"
+        description: "Number of interval between payments"
+      processor_id:
+        type: "string"
+        format: "uuid"
+        description: "The processor’s ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28"
+      merchant_transaction_id:
+        type: "string"
+        description: "The merchant assigned identifier"
+        example: "my-order-id-0001"
+      first_name:
+        type: "string"
+        description: "Customer’s first name"
+        example: "John"
+      last_name:
+        type: "string"
+        description: "Customer’s last name"
+        example: "Doe"
+      shipping_street_address_1:
+        type: "string"
+        description: "Shipping address first line (street address)"
+        example: "1104 Highland Ave."
+      shipping_street_address_2:
+        type: "string"
+        description: "Shipping address second line (suite, apt, etc)"
+        example: "Suite M"
+      shipping_city:
+        type: "string"
+        description: "Shipping address city"
+        example: "Manhattan Ave."
+      shipping_state:
+        type: "string"
+        description: "Shipping address state abbreviation"
+        example: "CA"
+      shipping_country:
+        type: "string"
+        description: "Shipping address country abbreviation"
+        example: "US"
+      shipping_zip:
+        type: "string"
+        description: "Shipping address postal code"
+        example: "90266"
+      email:
+        type: "string"
+        description: "Customer’s email"
+        example: "support@charge.io"
+      mobile_phone:
+        type: "string"
+        description: "Customer’s phone"
+        example: "11231231234"
+      amount: 
+        type: "number"
+        format: "float"
+        description: "Amount to be charged every recurring cycle"
+        example: "3.56"
+      trial_amount: 
+        type: "number"
+        format: "float"
+        description: "The amount charged on Subscription creating, used for paid trial periods."
+        example: "3.56"
+      start_date: 
+        type: "string"
+        format: "date-time"
+        description: "The date and time when subscription should start Y-m-d h:m:s format."
+        example: "2018-10-01 12:00:00"
+      end_date: 
+        type: "string"
+        format: "date-time"
+        description: "The date and time when subscription should end Y-m-d h:m:s format."
+        example: "2019-10-01 12:00:00"
+      subscription.next_cycle_date: 
+        type: "string"
+        format: "date-time"
+        description: "The date and time of the next charge Y-m-d h:m:s format."
+        example: "2019-10-01 12:00:00"
+      transactions:
+        type: "array"
+        description: "Listing of Subscription related transactions"
+        items:
+          $ref: "#/definitions/Transaction"
+      card_number: 
+        type: "string"
+        description: "The credit card to charge. Required for credit card subscriptions only"
+        example: "411111111111111"
+      card_expiry_month: 
+        type: "string"
+        description: "The expiration month with two positions. Required for credit card subscriptions only"
+        example: "01"
+      card_expiry_year: 
+        type: "string"
+        description: "The expiration year with four positions. Required for credit card subscriptions only"
+        example: "2021"
+      updated_at: 
+        type: "string"
+        format: "date-time"
+        description: "Last time this transaction was updated, on [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) UTC"
+        example: "2018-02-16T16:33:40+00:00"
+      created_at: 
+        type: "string"
+        format: "date-time"
+        description: "Last  time this transaction was created, on [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) UTC"
+        example: "2018-02-16T16:33:40+00:00"
+  
+  AccountNumberValidation:
+    type: "object"
+    properties:
+      valid_account:
+        type: "boolean"
+        description: "This parameter holds the validation result and it has only two possible values: true or false."
+        example: "false"
+      error:
+        type: "string"
+        required: false
+        description: "If it's present, it means that there is an error with your request and it will contain a message to help you correct the problem."
+        example: "Missing or invalid account number"
+
+  TokenizeCardToken:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+        description: "This token’s ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28" 
+      merchant_id:
+        type: "string"
+        format: "uuid"
+        description: "The token’s merchant ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28" 
+      card_token:
+        type: "string"
+        description: "The tokenized credit card"
+        example: "4111098765431111" 
+ 
+  DetokenizeCardToken:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+        description: "This token’s ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28" 
+      merchant_id:
+        type: "string"
+        format: "uuid"
+        description: "The token’s merchant ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28" 
+      card_number:
+        type: "string"
+        description: "The original credit card number"
+        example: "4111111111111111" 
+      card_expiry_month:
+        type: "string"
+        description: "The original credit card expiration month"
+        example: "12"
+      card_expiry_year:
+        type: "string"
+        description: "The original credit card expiration year"
+        example: "2025"
+
+  ACHTokenizeCardToken:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+        description: "This token’s ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28" 
+      merchant_id:
+        type: "string"
+        format: "uuid"
+        description: "The token’s merchant ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28" 
+      token:
+        type: "string"
+        description: "The tokenized ACH data"
+        example: "57LVNSEW6K1LTUQ2MSP92NCAN7V057A7KST3BM" 
+ 
+  ACHDetokenizeCardToken:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+        description: "This token’s ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28" 
+      merchant_id:
+        type: "string"
+        format: "uuid"
+        description: "The token’s merchant ID"
+        example: "41f00869-d7b3-413e-9476-9ef1a8bc2f28" 
+      account_number:
+        type: "string"
+        description: "The account number"
+        example: "74022783922013" 
+      check_number:
+        type: "string"
+        description: "The check number"
+        example: "411785"
+      routing_number:
+        type: "string"
+        description: "The routing number"
+        example: "061103852"
+
+
+
+
+
+  
+
+
