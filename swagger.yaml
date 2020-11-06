@@ -14,7 +14,7 @@ info:
 
     With that token, you’ll be able to access our API. You should send your key in every request to our API, in order to authenticate and identify yourself. For every request, you should pass the Authorization HTTP Header containing your token, prefixed by “Bearer “ string. Example below:
 
-    `curl -H 'Authorization: Bearer YOUR_API_TOKEN' https://gateway-api.paycertify.com/api/transactions`
+    `curl -H 'Authorization: Bearer YOUR_API_TOKEN' https://gateway-api.charge.io/api/transactions`
 
     An authentication error message would return a message like the following:
       
@@ -129,7 +129,7 @@ info:
 
     #### Charge a Credit Card
 
-    Charging a credit card using PayCertify gateway is simple. In this case, we’re performing a straight capture, so it’s an authorization and also a settlement request. If you’re looking just to authorize a certain amount, and then charge later, see **Authorize and Charge later**
+    Charging a credit card using Charge gateway is simple. In this case, we’re performing a straight capture, so it’s an authorization and also a settlement request. If you’re looking just to authorize a certain amount, and then charge later, see **Authorize and Charge later**
 
     #### Authorize and Charge Later
 
@@ -179,7 +179,7 @@ info:
    
     #### Airline & Travel Data
 
-    PayCertify Gateway™ has some built-in features for the Airline and Travel industries. Whenever submitting a transaction for those industries, you can pass additional information which will both populate on our Gateway’s user interface and also on the customer’s credit card statement, besides sending additional data to the processors which help on reconciliation, dispute, risk, fraud mitigation and chargeback representment processes. This data includes:
+    Charge Gateway™ has some built-in features for the Airline and Travel industries. Whenever submitting a transaction for those industries, you can pass additional information which will both populate on our Gateway’s user interface and also on the customer’s credit card statement, besides sending additional data to the processors which help on reconciliation, dispute, risk, fraud mitigation and chargeback representment processes. This data includes:
     
     * Passenger name and ticket details such as ticket number, issuing city, carrier and date;
     * Restricted ticket indicators (for tickets that cannot be refunded);
@@ -242,7 +242,7 @@ info:
     
     **Settlement**: a process, that usually happens every 2 hours, to get all authorizations grouped into a batch of transactions that are then submitted to the processor to deduct the funds from the customer’s account. At this point it is safe to allow access to the product, either by shipping the product or delivering a digital good or service.
 
-    In order to keep those two concepts completely manageable by the merchant, on PayCertify Gateway™ we have implemented a Transaction Event concept, which is an append-only log, that keeps the whole transaction lifecycle intact. There are two different types of events for check transactions:
+    In order to keep those two concepts completely manageable by the merchant, on Charge Gateway™ we have implemented a Transaction Event concept, which is an append-only log, that keeps the whole transaction lifecycle intact. There are two different types of events for check transactions:
 
     A **sale**, running the authorization and settlement portions, is not real-time. This means you will need to use the reporting endpoints to check for settlement later. If the **sale** does not settle, a **refund** request will act as a cancellation. If the transaction has already settled, a **refund** request will appear as a credit to the customer’s account.
 
@@ -254,11 +254,11 @@ info:
 
     #### Charge an Account
 
-    Charging a bank account using PayCertify Gateway is simple. All you need is the bank account information of the person or entity you want to credit or debit. Then decide how much you want to send or receive from their bank account.
+    Charging a bank account using Charge Gateway is simple. All you need is the bank account information of the person or entity you want to credit or debit. Then decide how much you want to send or receive from their bank account.
 
     #### Refund an Account
 
-    Refunding a bank account using PayCertify Gateway is simple. A refund stops the transaction from being settled and don’t remove funds from the customer.
+    Refunding a bank account using Charge Gateway is simple. A refund stops the transaction from being settled and don’t remove funds from the customer.
 
 
     ---
@@ -272,12 +272,12 @@ info:
 
     Filtering is enabled to this endpoint through query parameter **search**. So whenever searching for a field, make sure to submit it through the endpoint’s query parameters, for example: 
     
-      `https://gateway-api.paycertify.com/api/transactions?search[first_name]=John&search[last_name]=Doe`
+      `https://gateway-api.charge.io/api/transactions?search[first_name]=John&search[last_name]=Doe`
     
     Filter types are described below:
 
-      * **starts with** which matches for records on a SQL **LIKE** fashion, e.g.: a string “PayC” will match “PayCertify”;
-      * **exact comparison** which matches for records through exact comparison, case sensitive, e.g.: a string “Paycertify” will NOT match “PayCertify”;
+      * **starts with** which matches for records on a SQL **LIKE** fashion, e.g.: a string “PayC” will match “Charge”;
+      * **exact comparison** which matches for records through exact comparison, case sensitive, e.g.: a string “Charge” will NOT match “Charge”;
       * **date** which matches for records through SQL date, and these fields should be provided on Y-m-d H:i:s format, e.g.: 2025-01-01 17:59:00
 
     Also, this endpoint provides pagination to navigate through record sets. Pagination information can be found on meta response field. The pages always return 50 records at a time. While using reporting capabilities, make sure to monitor rate limits through **X-RateLimit-Limit** and **X-RateLimit-Remaining** response headers.
@@ -290,7 +290,7 @@ info:
 
     #### Card Tokenization
 
-    The idea is to swap payment card data with a randomized number in the same format with no intrinsic value of its own. The difference from encryption is that the original pattern is still “locked”. Encrypted values can be decrypted with the key, brute computing force, or through a hacked/stolen key. Tokens, by the other hand, have no mathematical relationship between the token and its original number, then it cannot be decrypted. De-tokenization can only be done by the PayCertify tokenization system.
+    The idea is to swap payment card data with a randomized number in the same format with no intrinsic value of its own. The difference from encryption is that the original pattern is still “locked”. Encrypted values can be decrypted with the key, brute computing force, or through a hacked/stolen key. Tokens, by the other hand, have no mathematical relationship between the token and its original number, then it cannot be decrypted. De-tokenization can only be done by the Charge tokenization system.
 
     This endpoint tokenizes a given credit card number. You will need to provide the card number you wish to store and then you will be able to retrieve the card number with the original number out of the token provided on the response.
 
@@ -300,7 +300,7 @@ info:
 
     #### ACH Tokenization
 
-    The idea is to swap payment ACH data with an encrypted string. De-tokenization can only be done by the PayCertify tokenization system.
+    The idea is to swap payment ACH data with an encrypted string. De-tokenization can only be done by the Charge tokenization system.
 
     This endpoint tokenizes a given account, check and routing number. You will need to provide these three parameters you wish to store and then you will be able to retrieve the token provided on the response.
 
@@ -309,7 +309,7 @@ info:
     This endpoint detokenizes a given ACH token. You will need to provide the token you wish to detokenize and as part of the response you’ll get the original number previously stored and it’s expiration month and year.
 
 
-    **For more information and a demo about our gateway, please contact support@paycertify.com.**    
+    **For more information and a demo about our gateway, please contact support@charge.io.**    
   title: "Charge Payments"
   host: "gateway-api.charge.io"
   basePath: "/api"
@@ -1075,10 +1075,9 @@ definitions:
         description: "The ID of the Identification document for the customer. Only required to PayVisionCard processor. The documents accepted are [CPF : Tax payer identification number for individuals](https://en.wikipedia.org/wiki/Cadastro_de_Pessoas_F%C3%ADsicas) and [CNPJ : Tax payer identification number for businesses](https://en.wikipedia.org/wiki/CNPJ)"
         example: "00003456790"
       meta:
-        type: "json"
+        type: "object"
         required: false
         description: "A fields’ list related to merchant’s business"
-        example: "“meta”: {}"
       threeds_enabled:
         type: "boolean"
         required: false
@@ -1380,7 +1379,7 @@ definitions:
         type: "string"
         require: true
         description: "Customer’s email"
-        example: "support@paycertify.com"
+        example: "support@charge.io"
       mobile_phone:
         type: "string"
         require: false
@@ -1818,7 +1817,7 @@ definitions:
       email:
         type: "string"
         description: "Customer’s email"
-        example: "support@paycertify.com"
+        example: "support@charge.io"
       mobile_phone:
         type: "string"
         description: "Customer’s phone"
