@@ -1,6 +1,7 @@
 ---
 swagger: "2.0"
 info:
+  title: Charge Payments
   description: |
     ![Charge logo](dist/charge_payments.png)
 
@@ -310,17 +311,11 @@ info:
 
 
     **For more information and a demo about our gateway, please contact support@charge.io.**    
-  title: "Charge Payments"
-  host: "gateway-api.charge.io"
-  basePath: "/api"
-  tags:
-  - name: "Card Transactions"
-  - name: "Recurring Billing"
-  - name: "Check Transactions"
-  - name: "Reporting"
-  - name: "Tokenization"
-  schemes:
-  - "https"
+  version: 1.0.0
+host: gateway-api.charge.io
+basePath: /api
+schemes:
+- "https"
 paths:
   /transactions/sale:
     post:
